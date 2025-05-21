@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "include/logger.h"
 
 #define PORT 25015
 
@@ -48,6 +49,7 @@ int main() {
     scanf("%254s", message);
     send(sock, message, strlen(message), 0);
     printf("Message sended succesfully.\n");
+    log_message(message); // ? Don't use buffer here otherwise you will get a blank text.
     read(sock, buffer, 1024);
     printf("$ Response from the server : %s\n", buffer);
 

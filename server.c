@@ -14,11 +14,18 @@ int main(){
     int addrlen = sizeof(address);
     char buffer[1024] = {0}; // ? We use buffers for the data i/o's (inputs/outputs)
     char *response = "Hello, client"; 
+    int opt = 1;
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("Socket didn't created!");
         exit(EXIT_FAILURE);
     }   
+
+    // ? Enablind the SO_REUSEADDR for using the port again.
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt(SO_REUSEADDR) failed");
+        exit(EXIT_FAILURE);
+    }
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY; // ? INADDR_ANY = Address to accept any incoming messages.
@@ -63,7 +70,7 @@ int main(){
     printf("Data from client : %s\n", buffer);
     send(new_socket, response, strlen(response), 0);
     // ? Sends bytes to the "new_socket"
-    printf("Response sent succesfully.");
+    printf("Response sent succesfully.\n");
 
     close(new_socket);
     close(server_fd);
