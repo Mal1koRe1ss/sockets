@@ -5,15 +5,22 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
 #include "include/logger.h"
 
-#define PORT 25015
+#define DEFAULT_PORT 25015
 
-int main() {
-    char message [255];
-    int sock = 0;
+int main(int argc, char *argv[]) {
+
+    int sock = 0, activity;
     struct sockaddr_in server_addr; // ? Defining the socket address.
+    fd_set readfds;
     char buffer[1024] = {0}; // * We use buffers for the data i/o's (inputs/outputs)
+    int port = DEFAULT_PORT;
+
+    // ? Reading the CLI inputs at the start of the script.
+    // ? Converting ASCII to Integer using "atoi()".
+    if (argc > 1) port = atoi(argv[1]);
 
     // ? Creating the socket
 
@@ -23,7 +30,7 @@ int main() {
     }
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
 
     // ? Converting the IP address to binary.
 
@@ -39,21 +46,45 @@ int main() {
     // ? Connecting the server.
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        // ? It connects the socket to sockaddr.
+        // ? It connects the socket to sockaddr.    
         perror("Connection error.");
         exit(EXIT_FAILURE);
     }
 
-    // ? Send messages and get the respond.
-    printf("$ : ");
-    scanf("%254s", message);
-    send(sock, message, strlen(message), 0);
-    printf("Message sended succesfully.\n");
-    log_message(message); // ? Don't use buffer here otherwise you will get a blank text.
-    read(sock, buffer, 1024);
-    printf("$ Response from the server : %s\n", buffer);
+    while(1) {
+        FD_ZERO(&readfds); // ? FD_ZERO Initializes the FD(File descriptor) set.
+        FD_SET(sock, &readfds); // ? FD_SET represents FD(file descriptor) sets for the select function. In this example we are using it for watching the socket activity.
+        FD_SET(STDIN_FILENO, &readfds); // ? Watching the console inputs .
+        int max_sd = (sock > STDIN_FILENO) ? sock : STDIN_FILENO;
 
-    close(sock);
+        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+        if (activity < 0) {
+            perror("Select error");
+            continue;
+        }
+
+        // ? Get the data from the server
+        if (FD_ISSET(sock, &readfds)) {
+            // ? You can think the "FD_ISSET" as FD_SET is set.
+            int bytes_read = read(sock, buffer, 1024);
+            if (bytes_read <= 0) {
+                printf("Server closed the connection.\n");
+                break;
+            }
+            buffer[bytes_read] = '\0';
+            printf("Server: %s\n", buffer);
+        }
+
+        // ? Send data from the console.
+        if (FD_ISSET(STDIN_FILENO, &readfds)) {
+            // ? STDIN_FILENO species the FD(file descriptor)s for standard input and outputs.
+            fgets(buffer, 1024, stdin);
+            buffer[strcspn(buffer, "\n")] = '\0';
+            log_message(buffer);
+            send(sock, buffer, strlen(buffer), 0);
+        }
+    }
+
     return 0;
-
 }
