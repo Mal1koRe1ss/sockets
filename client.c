@@ -101,6 +101,7 @@ int main(int argc, char *argv[]) {
                 printf(":disconnect -> Disconnects from the server.\n");
                 printf(":port -> Shows the used port.\n");
                 printf(":help -> Prints all the available commands.\n");
+                printf(":stats -> Shows data transfer statistics, RAM and CPU usage.\n");
                 continue;
             } else if (strcmp(command, STRINGS[1]) == 0) {
                 printf("Current Port : %d\n",port);

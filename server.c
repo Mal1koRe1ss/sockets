@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
                 printf(":connections -> Shows active connections.\n");
                 printf(":help -> Prints all the available commands.\n");
                 printf(":port -> Shows the current port.");
-                printf(":stats -> Shows data transfer statistics.\n");
+                printf(":stats -> Shows data transfer statistics, RAM and CPU usage.\n");
                 continue;
             } else if (strcmp(command, STRINGS[3]) == 0) { // * :port
                 printf("Current Port : %d\n",port);
