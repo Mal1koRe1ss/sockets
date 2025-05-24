@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-void log_message(const char* message) {
+void log_message(const  char* header, const char* message) {
     time_t t = time(NULL); // ? Creating the timer.
     struct tm* tm = localtime(&t); // ? Using local timer.
 
@@ -16,7 +16,7 @@ void log_message(const char* message) {
         return;
     }
 
-    fprintf(pF, "[%02d:%02d:%02d] %s\n", 
-            tm->tm_hour, tm->tm_min, tm->tm_sec, message); // ? Appending the logs to the file.
+    fprintf(pF, "[%02d:%02d:%02d] %s : %s\n", 
+            tm->tm_hour, tm->tm_min, tm->tm_sec, header, message); // ? Appending the logs to the file.
     fclose(pF); // ? Closing the file.
 }

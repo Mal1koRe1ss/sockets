@@ -5,11 +5,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
+#include <arpa/inet.h>
+#include "include/logger.h"
 
 #define DEFAULT_PORT 25015 // * You can define custom port here.
 #define MAX_CLIENTS 3
 
 int main(int argc, char *argv[]){
+
+    char *STRINGS[] = {":close",":connections",":help","port"}; // ? Commands
 
     int server_fd, new_socket, max_sd, activity;
     struct sockaddr_in address; // ? Definening the socket address
@@ -19,6 +23,7 @@ int main(int argc, char *argv[]){
     int port = DEFAULT_PORT;
     int opt = 1;
     int addrlen = sizeof(address);
+    const char *header = "Server";
 
     int backlog = 3; // ? Backlog value for pending connection queue.
 
@@ -113,9 +118,47 @@ int main(int argc, char *argv[]){
             fgets(buffer, 1024, stdin);
             buffer[strcspn(buffer, "\n")] = '\0'; // ? Delete the newline character (ENTER)
 
+            //  ? Command control here
+            if (strcmp(buffer, STRINGS[0]) == 0) { // * :close
+                close(server_fd);
+                exit(EXIT_SUCCESS);
+            } else if (strcmp(buffer, STRINGS[1]) == 0) { // * :commands
+                printf("Active connections:\n");
+                int active_connections = 0; // ? For sending the "There is no active connections." text.
+
+                for (int i = 0; i < MAX_CLIENTS; i++) {
+                    if (client_sockets[i] != 0) { // ? If it's 0 there's no active connection.
+                        struct sockaddr_in client_addr; // ? Socket address for client.
+                        socklen_t len = sizeof(client_addr);
+                        if (getpeername(client_sockets[i], (struct sockaddr*)&client_addr, &len) == 0) {
+                            printf("[Index %d] FD %d | IP %s | Port: %d\n",
+                                i, // ? Clients FD id
+                                client_sockets[i], // ? Clients FD id
+                                inet_ntoa(client_addr.sin_addr), // ? Clients ipv4 address
+                                ntohs(client_addr.sin_port)); // ? Clients port
+                            active_connections++;
+                        }
+                    }
+                }   
+
+                if (active_connections == 0) {
+                    printf("There is no active connections.\n");
+                }
+                continue;
+            } else if (strcmp(buffer, STRINGS[2]) == 0) { // * :help
+                printf("Available commands:\n");
+                printf(":close -> Closes all connection.\n");
+                printf(":connections -> Shows active connections.\n");
+                printf(":help -> Prints all the available commands.\n");
+                continue;
+            } else if (strcmp(buffer, STRINGS[3]) == 0) { // * :port
+                printf("Current Port : %d\n",port);
+            }
+
             // ? Send messages to all the clients.
             for (int i = 0; i < MAX_CLIENTS; i++) {
                 if (client_sockets[i] != 0) {
+                    log_message(header, buffer);
                     send(client_sockets[i], buffer, strlen(buffer), 0);
                 }
             }
@@ -131,9 +174,12 @@ int main(int argc, char *argv[]){
                     close(client_sockets[i]);
                     client_sockets[i] = 0;
                 } else {
+                    char client_header[50];
+                    snprintf(client_header, sizeof(client_header), "Client FD %d", client_sockets[i]);
+                    log_message(client_header,buffer);
                     buffer[bytes_read] = '\0';
                     printf("Client FD %d: %s\n", client_sockets[i], buffer);
-                    send(client_sockets[i], 0, 15, 0);
+                    send(client_sockets[i], buffer, strlen(buffer), 0);
                 }
             }
         }       
@@ -141,5 +187,4 @@ int main(int argc, char *argv[]){
     
     close(server_fd);
     return 0;
-
 }

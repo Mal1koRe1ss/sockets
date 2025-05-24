@@ -12,6 +12,8 @@
 
 int main(int argc, char *argv[]) {
 
+    char *STRINGS[] = {":help",":port",":disconnect"}; // ? Commands
+
     int sock = 0, activity;
     struct sockaddr_in server_addr; // ? Defining the socket address.
     fd_set readfds;
@@ -81,8 +83,26 @@ int main(int argc, char *argv[]) {
             // ? STDIN_FILENO species the FD(file descriptor)s for standard input and outputs.
             fgets(buffer, 1024, stdin);
             buffer[strcspn(buffer, "\n")] = '\0';
-            log_message(buffer);
-            send(sock, buffer, strlen(buffer), 0);
+
+            // ? Command control here
+
+            if (strcmp(buffer, STRINGS[0]) == 0) {
+                printf("Available commands:\n");
+                printf(":disconnect -> Disconnects from the server.\n");
+                printf(":port -> Shows the used port.\n");
+                printf(":help -> Prints all the available commands.\n");
+                continue;
+            } else if (strcmp(buffer, STRINGS[1]) == 0) {
+                printf("Current Port : %d\n",port);
+                continue;
+            } else if (strcmp(buffer, STRINGS[2]) == 0) {
+                close(sock);
+                exit(EXIT_SUCCESS);
+                break;
+            } else {
+                send(sock, buffer, strlen(buffer), 0); // ? If there's no command used we just send the message.
+                continue;
+            }
         }
     }
 
