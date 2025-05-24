@@ -7,18 +7,21 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include "include/logger.h"
+#include "include/usage.h"
+#include "include/utils.h"
 
 #define DEFAULT_PORT 25015
 
 int main(int argc, char *argv[]) {
 
-    char *STRINGS[] = {":help",":port",":disconnect"}; // ? Commands
+    char *STRINGS[] = {":help",":port",":disconnect",":stats"}; // ? Commands
 
     int sock = 0, activity;
     struct sockaddr_in server_addr; // ? Defining the socket address.
     fd_set readfds;
     char buffer[1024] = {0}; // * We use buffers for the data i/o's (inputs/outputs)
     int port = DEFAULT_PORT;
+    int bytes_read = 0; // ? Readed bytes
 
     // ? Reading the CLI inputs at the start of the script.
     // ? Converting ASCII to Integer using "atoi()".
@@ -69,13 +72,17 @@ int main(int argc, char *argv[]) {
         // ? Get the data from the server
         if (FD_ISSET(sock, &readfds)) {
             // ? You can think the "FD_ISSET" as FD_SET is set.
-            int bytes_read = read(sock, buffer, 1024);
-            if (bytes_read <= 0) {
+            int read_bytes = read(sock, buffer, 1024);
+            if (read_bytes <= 0) {
                 printf("Server closed the connection.\n");
                 break;
             }
-            buffer[bytes_read] = '\0';
+            buffer[read_bytes] = '\0';
             printf("Server: %s\n", buffer);
+
+            if (bytes_read > 0) {
+                bytes_read += read_bytes; // ? Adding the sended bytes to the variable.
+            }    
         }
 
         // ? Send data from the console.
@@ -83,22 +90,39 @@ int main(int argc, char *argv[]) {
             // ? STDIN_FILENO species the FD(file descriptor)s for standard input and outputs.
             fgets(buffer, 1024, stdin);
             buffer[strcspn(buffer, "\n")] = '\0';
+            char command[1024];
+            strcpy(command, buffer);
+            lowercase(command);
 
             // ? Command control here
 
-            if (strcmp(buffer, STRINGS[0]) == 0) {
+            if (strcmp(command, STRINGS[0]) == 0) {
                 printf("Available commands:\n");
                 printf(":disconnect -> Disconnects from the server.\n");
                 printf(":port -> Shows the used port.\n");
                 printf(":help -> Prints all the available commands.\n");
                 continue;
-            } else if (strcmp(buffer, STRINGS[1]) == 0) {
+            } else if (strcmp(command, STRINGS[1]) == 0) {
                 printf("Current Port : %d\n",port);
                 continue;
-            } else if (strcmp(buffer, STRINGS[2]) == 0) {
+            } else if (strcmp(command, STRINGS[2]) == 0) {
                 close(sock);
                 exit(EXIT_SUCCESS);
-                break;
+            } else if (strcmp(command, STRINGS[3]) == 0) {
+                char stats_buffer[512];
+                long ram_kb = get_memory_usage();
+                double ram_mb = ram_kb / 1024.0; // KB -> MB
+
+                snprintf(stats_buffer, sizeof(stats_buffer),
+                    "Received Data : %.2f KB\nRAM Usage : %ldKB/%.2fMB\nCPU Usage : %.2f%%\n",
+                    bytes_read / 1024.0,
+                    ram_kb,    // long -> %ld
+                    ram_mb,
+                    get_cpu_usage()        // float -> %.2f
+                );
+
+                printf("%s", stats_buffer); 
+                continue;
             } else {
                 send(sock, buffer, strlen(buffer), 0); // ? If there's no command used we just send the message.
                 continue;

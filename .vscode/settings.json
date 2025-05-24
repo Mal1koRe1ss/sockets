@@ -59,6 +59,7 @@
   "files.associations": {
     "cstdlib": "c",
     "stdio.h": "c",
-    "socket.h": "c"
+    "socket.h": "c",
+    "string.h": "c"
   }
 }

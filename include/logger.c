@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-void log_message(const  char* header, const char* message) {
+void log_message(const char* header, const char* message) {
     time_t t = time(NULL); // ? Creating the timer.
     struct tm* tm = localtime(&t); // ? Using local timer.
 

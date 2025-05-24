@@ -7,14 +7,15 @@
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include "include/logger.h"
+#include "include/usage.h"
+#include "include/utils.h"
 
 #define DEFAULT_PORT 25015 // * You can define custom port here.
 #define MAX_CLIENTS 3
 
 int main(int argc, char *argv[]){
 
-    char *STRINGS[] = {":close",":connections",":help","port"}; // ? Commands
-
+    char *STRINGS[] = {":close",":connections",":help",":port", ":stats"}; // ? Commands
     int server_fd, new_socket, max_sd, activity;
     struct sockaddr_in address; // ? Definening the socket address
     int client_sockets[MAX_CLIENTS] = {0};
@@ -24,6 +25,8 @@ int main(int argc, char *argv[]){
     int opt = 1;
     int addrlen = sizeof(address);
     const char *header = "Server";
+    long bytes_sent = 0; // ? Sended bytes
+    int bytes_read = 0; // ? Readed bytes
 
     int backlog = 3; // ? Backlog value for pending connection queue.
 
@@ -111,18 +114,21 @@ int main(int argc, char *argv[]){
                     break;
                 }
             }
-        }
+        }   
 
         // ? Console input control (Sending the server message to the clients.)
         if (FD_ISSET(STDIN_FILENO, &readfds)) {
             fgets(buffer, 1024, stdin);
             buffer[strcspn(buffer, "\n")] = '\0'; // ? Delete the newline character (ENTER)
+            char command[1024];
+            strcpy(command, buffer);
+            lowercase(command);
 
             //  ? Command control here
-            if (strcmp(buffer, STRINGS[0]) == 0) { // * :close
+            if (strcmp(command, STRINGS[0]) == 0) { // * :close
                 close(server_fd);
                 exit(EXIT_SUCCESS);
-            } else if (strcmp(buffer, STRINGS[1]) == 0) { // * :commands
+            } else if (strcmp(command, STRINGS[1]) == 0) { // * :commands
                 printf("Active connections:\n");
                 int active_connections = 0; // ? For sending the "There is no active connections." text.
 
@@ -145,22 +151,43 @@ int main(int argc, char *argv[]){
                     printf("There is no active connections.\n");
                 }
                 continue;
-            } else if (strcmp(buffer, STRINGS[2]) == 0) { // * :help
+            } else if (strcmp(command, STRINGS[2]) == 0) { // * :help
                 printf("Available commands:\n");
                 printf(":close -> Closes all connection.\n");
                 printf(":connections -> Shows active connections.\n");
                 printf(":help -> Prints all the available commands.\n");
                 printf(":port -> Shows the current port.");
+                printf(":stats -> Shows data transfer statistics.\n");
                 continue;
-            } else if (strcmp(buffer, STRINGS[3]) == 0) { // * :port
+            } else if (strcmp(command, STRINGS[3]) == 0) { // * :port
                 printf("Current Port : %d\n",port);
-            }
+                continue;
+            } else if (strcmp(command, STRINGS[4]) == 0) { // * :stats
+                char stats_buffer[512];
+                long ram_kb = get_memory_usage();
+                double ram_mb = ram_kb / 1024.0; // * KB -> MB
+
+                snprintf(stats_buffer, sizeof(stats_buffer),
+                    "Sended Data : %.2f KB\nReceived Data : %.2f KB\nRAM Usage : %ldKB/%.2fMB\nCPU Usage : %.2f%%\n",
+                    bytes_sent / 1024.0, 
+                    bytes_read / 1024.0,
+                    ram_kb,    // * long -> %ld
+                    ram_mb,
+                    get_cpu_usage()        // * float -> %.2f
+                );
+
+                printf("%s", stats_buffer); 
+                continue;
+            } 
 
             // ? Send messages to all the clients.
             for (int i = 0; i < MAX_CLIENTS; i++) {
                 if (client_sockets[i] != 0) {
                     log_message(header, buffer);
-                    send(client_sockets[i], buffer, strlen(buffer), 0);
+                    int sent_bytes = send(client_sockets[i], buffer, strlen(buffer), 0);
+                    if (sent_bytes > 0) {
+                        bytes_sent += sent_bytes; // ? Adding the sended bytes to the variable.
+                    }
                 }
             }
         }
@@ -168,8 +195,8 @@ int main(int argc, char *argv[]){
         // ? Check the client messages.
         for (int i = 0; i < MAX_CLIENTS; i++) {
             if (client_sockets[i] != 0 && FD_ISSET(client_sockets[i], &readfds)) {
-                int bytes_read = read(client_sockets[i], buffer, 1024);
-                if (bytes_read == 0) {
+                int read_bytes = read(client_sockets[i], buffer, 1024);
+                if (read_bytes == 0) {
                     // ? Client disconnected.
                     printf("Client FD %d disconnected.\n", client_sockets[i]);
                     close(client_sockets[i]);
@@ -178,9 +205,9 @@ int main(int argc, char *argv[]){
                     char client_header[50];
                     snprintf(client_header, sizeof(client_header), "Client FD %d", client_sockets[i]);
                     log_message(client_header,buffer);
-                    buffer[bytes_read] = '\0';
+                    buffer[read_bytes] = '\0';
+                    bytes_read += read_bytes; // ? Adding the readed bytes to the variable.
                     printf("Client FD %d: %s\n", client_sockets[i], buffer);
-                    send(client_sockets[i], buffer, strlen(buffer), 0);
                 }
             }
         }       
