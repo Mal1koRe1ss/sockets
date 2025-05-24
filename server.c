@@ -150,6 +150,7 @@ int main(int argc, char *argv[]){
                 printf(":close -> Closes all connection.\n");
                 printf(":connections -> Shows active connections.\n");
                 printf(":help -> Prints all the available commands.\n");
+                printf(":port -> Shows the current port.");
                 continue;
             } else if (strcmp(buffer, STRINGS[3]) == 0) { // * :port
                 printf("Current Port : %d\n",port);
