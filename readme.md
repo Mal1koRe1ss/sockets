@@ -1,4 +1,4 @@
-this ain't workin on windows.<br>i can't test it too because i'm using linux you can change the includes and change the code a little bit.<br>have a great day.<br>I wroted some explanations over there feel free to read them.
+This doesn't works on Windows.<br>Only Linux/MacOS.<br>If you want to use the Windows version change the includes and code.(I'm going to open a branch in the future)<br>Have a great day.<br>I wroted some explanations over there feel free to read them.
 
 ## Compiling
 
