@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/media/mal1kore1ss/1TB/Stuff/Coding/C/sockets",
-      "program": "/media/mal1kore1ss/1TB/Stuff/Coding/C/sockets/build/Debug/outDebug",
+      "cwd": "/media/mal1kore1ss/1TB/Stuff/Coding/C/sockets_video",
+      "program": "/media/mal1kore1ss/1TB/Stuff/Coding/C/sockets_video/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
