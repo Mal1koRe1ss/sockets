@@ -1,3 +1,5 @@
+For my new studies head over to the learn branch.
+
 This doesn't works on Windows.<br>Only Linux/MacOS.<br>If you want to use the Windows version change the includes and code.(I'm going to open a branch in the future)<br>Have a great day.<br>I wroted some explanations over there feel free to read them.
 
 ## Compiling
